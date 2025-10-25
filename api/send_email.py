@@ -4,21 +4,23 @@ import ssl
 from http.server import BaseHTTPRequestHandler
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from urllib.parse import urlparse, parse_qs
 
 class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
+    def do_GET(self):
         try:
-            # --- 1. قراءة البيانات من الطلب ---
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data)
+            # --- 1. قراءة البيانات من رابط URL ---
+            parsed_path = urlparse(self.path)
+            query_params = parse_qs(parsed_path.query)
 
-            recipient_email = data.get('recipient')
-            subject = data.get('subject')
-            body = data.get('body')
+            # استخلاص البيانات من الرابط
+            # Vercel سيقوم بتحويل الأجزاء الديناميكية من الرابط إلى query parameters
+            recipient_email = query_params.get('recipient', [None])[0]
+            subject = query_params.get('subject', [None])[0]
+            body = query_params.get('body', [None])[0]
 
             if not all([recipient_email, subject, body]):
-                self._send_response(400, {'message': 'خطأ: جميع الحقول مطلوبة.'})
+                self._send_response(400, {'message': 'خطأ: جميع الحقول مطلوبة في الرابط.'})
                 return
 
             # --- 2. إعدادات البريد الإلكتروني (بيانات الاعتماد مكتوبة مباشرة هنا) ---
@@ -52,6 +54,6 @@ class handler(BaseHTTPRequestHandler):
 
     def _send_response(self, status_code, data):
         self.send_response(status_code)
-        self.send_header('Content-type', 'application/json')
+        self.send_header('Content-type', 'application/json; charset=utf-8')
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
