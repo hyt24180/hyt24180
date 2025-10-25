@@ -1,0 +1,17 @@
+{
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "@vercel/python"
+    }
+  },
+  "routes": [
+    {
+      "src": "/sendgmail/gmail=(?<recipient>[^/]+)/topic=(?<subject>[^/]+)/Message=(?<body>.+)",
+      "dest": "/api/send_email.py?recipient=$recipient&subject=$subject&body=$body"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
