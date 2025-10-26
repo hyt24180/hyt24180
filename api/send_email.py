@@ -7,16 +7,15 @@ from http.server import BaseHTTPRequestHandler
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlparse, parse_qs
+from email.utils import formataddr # --- 1. استيراد دالة تنسيق العنوان ---
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            # --- 1. قراءة البريد الإلكتروني ورمز التحقق من رابط URL ---
             query_components = parse_qs(urlparse(self.path).query)
             recipient_email = query_components.get('recipient', [None])[0]
             verification_code = query_components.get('code', [None])[0]
 
-            # --- 2. التحقق من وجود البريد الإلكتروني والرمز ---
             if not recipient_email or not verification_code:
                 self._send_response(400, {
                     'message': 'خطأ: البريد الإلكتروني ورمز التحقق مطلوبان.',
@@ -24,19 +23,20 @@ class handler(BaseHTTPRequestHandler):
                 })
                 return
 
-            # --- 3. تعديل الموضوع والمحتوى حسب الطلب الجديد ---
             subject = "رمز التحقق"
-            body = f"رمز التحقق هو: {verification_code}" # استخدام الرمز من الرابط داخل الرسالة
+            body = f"رمز التحقق هو: {verification_code}"
 
-            # --- 4. إعدادات البريد الإلكتروني (بيانات الاعتماد) ---
+            # --- 2. إعدادات البريد الإلكتروني مع تحديد اسم المرسل ---
+            sender_name = "فريق الدعم" # <-- يمكنك تغيير هذا الاسم كما تشاء
             sender_email = "appasis444@gmail.com"
             sender_password = "badgfxczucaofogf"
             smtp_server = "smtp.gmail.com"
             smtp_port = 587
 
-            # --- 5. إنشاء وإرسال الرسالة ---
+            # --- 3. إنشاء وإرسال الرسالة مع الاسم الجديد ---
             msg = MIMEMultipart()
-            msg['From'] = sender_email
+            # هنا نستخدم formataddr لإضافة الاسم بجانب البريد الإلكتروني
+            msg['From'] = formataddr((sender_name, sender_email))
             msg['To'] = recipient_email
             msg['Subject'] = subject
 
@@ -48,11 +48,9 @@ class handler(BaseHTTPRequestHandler):
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, recipient_email, msg.as_string())
 
-            # --- 6. إرسال رد النجاح ---
             self._send_response(200, {'message': f'✅ تم إرسال رمز التحقق "{verification_code}" بنجاح إلى {recipient_email}!'})
 
         except Exception as e:
-            # --- 7. إرسال رد الفشل في حالة حدوث خطأ ---
             self._send_response(500, {'message': f'فشل إرسال البريد الإلكتروني: {str(e)}'})
 
     def _send_response(self, status_code, data):
