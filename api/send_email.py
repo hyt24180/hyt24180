@@ -3,7 +3,6 @@
 import json
 import smtplib
 import ssl
-# لم نعد بحاجة لمكتبة random
 from http.server import BaseHTTPRequestHandler
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -15,7 +14,7 @@ class handler(BaseHTTPRequestHandler):
             # --- 1. قراءة البريد الإلكتروني ورمز التحقق من رابط URL ---
             query_components = parse_qs(urlparse(self.path).query)
             recipient_email = query_components.get('recipient', [None])[0]
-            verification_code = query_components.get('code', [None])[0] # قراءة الرمز من الرابط
+            verification_code = query_components.get('code', [None])[0]
 
             # --- 2. التحقق من وجود البريد الإلكتروني والرمز ---
             if not recipient_email or not verification_code:
@@ -25,9 +24,9 @@ class handler(BaseHTTPRequestHandler):
                 })
                 return
 
-            # --- 3. تعيين الموضوع والمحتوى بناءً على البيانات من الرابط ---
-            subject = "رمز التحقق هو:"
-            body = verification_code  # استخدام الرمز الذي تم تمريره في الرابط
+            # --- 3. تعديل الموضوع والمحتوى حسب الطلب الجديد ---
+            subject = "رمز التحقق"
+            body = f"رمز التحقق هو: {verification_code}" # استخدام الرمز من الرابط داخل الرسالة
 
             # --- 4. إعدادات البريد الإلكتروني (بيانات الاعتماد) ---
             sender_email = "appasis444@gmail.com"
